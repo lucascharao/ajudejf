@@ -10,7 +10,7 @@ import {
   Car, ChefHat, Dumbbell, Brain, Smartphone,
   Pill, Cross, PawPrint, Cake, FileText, Brush, Wheat,
   Stethoscope, Heart, Gift,
-  Camera, X,
+  Camera, X, QrCode, ZoomIn,
 } from 'lucide'
 
 const ICONS = {
@@ -22,11 +22,45 @@ const ICONS = {
   Car, ChefHat, Dumbbell, Brain, Smartphone,
   Pill, Cross, PawPrint, Cake, FileText, Brush, Wheat,
   Stethoscope, Heart, Gift,
-  Camera, X,
+  Camera, X, QrCode, ZoomIn,
 }
 
 function initIcons (root = document) {
   createIcons({ icons: ICONS, root })
+}
+
+// ── PIX LIGHTBOX (consulta) ──
+window.openPixLightbox = function (url) {
+  let overlay = document.getElementById('pix-lightbox')
+  if (!overlay) {
+    overlay = document.createElement('div')
+    overlay.id = 'pix-lightbox'
+    overlay.className = 'pix-lightbox-overlay'
+    overlay.innerHTML = `
+      <div class="pix-lightbox-content">
+        <button class="pix-lightbox-close" onclick="window.closePixLightbox()">&times;</button>
+        <p class="pix-lightbox-hint">Escaneie o QR Code abaixo para fazer o PIX</p>
+        <img class="pix-lightbox-img" alt="QR Code PIX" />
+        <button class="pix-lightbox-download" onclick="window.open(document.querySelector('.pix-lightbox-img').src, '_blank')">
+          Abrir imagem em nova aba
+        </button>
+      </div>`
+    document.body.appendChild(overlay)
+    overlay.addEventListener('click', function (e) {
+      if (e.target === overlay) window.closePixLightbox()
+    })
+  }
+  overlay.querySelector('.pix-lightbox-img').src = url
+  overlay.classList.add('active')
+  document.body.style.overflow = 'hidden'
+}
+
+window.closePixLightbox = function () {
+  const overlay = document.getElementById('pix-lightbox')
+  if (overlay) {
+    overlay.classList.remove('active')
+    document.body.style.overflow = ''
+  }
 }
 
 // ── PIX QR CODE UPLOAD ──
@@ -476,7 +510,7 @@ function cardDoacao (item, cidade) {
         ${item.horario ? `<div class="rc-row"><i data-lucide="clock" class="icon-xs"></i> ${esc(item.horario)}</div>` : ''}
         ${chips(item.aceita)}
         ${item.pix_chave ? `<div class="rc-row rc-pix"><i data-lucide="banknote" class="icon-xs"></i> PIX (${esc(item.pix_tipo)}): <strong>${esc(item.pix_chave)}</strong>${item.pix_titular ? ` — ${esc(item.pix_titular)}` : ''}</div>` : ''}
-        ${item.pix_qrcode_url ? `<div class="rc-pix-qr"><img src="${esc(item.pix_qrcode_url)}" alt="QR Code PIX" loading="lazy" onclick="window.open('${esc(item.pix_qrcode_url)}','_blank')" /></div>` : ''}
+        ${item.pix_qrcode_url ? `<button class="rc-pix-qr-btn" onclick="window.openPixLightbox('${esc(item.pix_qrcode_url)}')"><i data-lucide="qr-code" class="icon-xs"></i> Ver QR Code PIX <i data-lucide="zoom-in" class="icon-xs"></i></button>` : ''}
       </div>
       ${wppBtn(item.telefone)}
     </div>`
@@ -563,7 +597,7 @@ function cardVaquinha (item, cidade) {
       <div class="rc-body">
         ${item.descricao ? `<div class="rc-row">${esc(item.descricao)}</div>` : ''}
         ${item.pix_chave ? `<div class="rc-row rc-pix"><i data-lucide="banknote" class="icon-xs"></i> PIX (${esc(item.pix_tipo)}): <strong>${esc(item.pix_chave)}</strong>${item.pix_titular ? ` — ${esc(item.pix_titular)}` : ''}</div>` : ''}
-        ${item.pix_qrcode_url ? `<div class="rc-pix-qr"><img src="${esc(item.pix_qrcode_url)}" alt="QR Code PIX" loading="lazy" onclick="window.open('${esc(item.pix_qrcode_url)}','_blank')" /></div>` : ''}
+        ${item.pix_qrcode_url ? `<button class="rc-pix-qr-btn" onclick="window.openPixLightbox('${esc(item.pix_qrcode_url)}')"><i data-lucide="qr-code" class="icon-xs"></i> Ver QR Code PIX <i data-lucide="zoom-in" class="icon-xs"></i></button>` : ''}
       </div>
       <a href="${esc(item.link_vakinha)}" target="_blank" rel="noopener noreferrer" class="rc-wpp">🔗 Acessar Vaquinha</a>
       ${wppBtn(item.telefone)}

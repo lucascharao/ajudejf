@@ -507,17 +507,105 @@
       gap: 4px;
     }
     .pix-remove-btn:hover { background: #fde8e8; }
-    .rc-pix-qr { margin-top: 6px; }
-    .rc-pix-qr img {
-      width: 120px; height: 120px;
-      object-fit: contain;
+    /* Botão QR Code PIX nos cards */
+    .rc-pix-qr-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 8px;
+      padding: 10px 16px;
+      background: linear-gradient(135deg, #f6c84b 0%, #f0b429 100%);
+      color: #1a3a5c;
+      border: none;
       border-radius: var(--radius);
-      border: 1.5px solid #f6c84b;
-      background: #fff;
-      padding: 4px;
+      font-size: 14px;
+      font-weight: 700;
       cursor: pointer;
+      transition: transform .15s, box-shadow .15s;
+      box-shadow: 0 2px 6px rgba(246,200,75,.4);
     }
-    .rc-pix-qr img:hover { transform: scale(1.05); }
+    .rc-pix-qr-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(246,200,75,.5);
+    }
+    .rc-pix-qr-btn:active { transform: translateY(0); }
+
+    /* Lightbox overlay */
+    .pix-lightbox-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: rgba(0,0,0,.75);
+      backdrop-filter: blur(4px);
+      justify-content: center;
+      align-items: center;
+      padding: 24px;
+    }
+    .pix-lightbox-overlay.active { display: flex; }
+
+    .pix-lightbox-content {
+      position: relative;
+      background: #fff;
+      border-radius: 16px;
+      padding: 32px 24px 24px;
+      max-width: 380px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,.3);
+      animation: pix-lb-in .25s ease-out;
+    }
+    @keyframes pix-lb-in {
+      from { opacity: 0; transform: scale(.9); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+
+    .pix-lightbox-close {
+      position: absolute;
+      top: 8px; right: 12px;
+      background: none;
+      border: none;
+      font-size: 28px;
+      color: #666;
+      cursor: pointer;
+      line-height: 1;
+      padding: 4px 8px;
+      border-radius: 50%;
+      transition: background .15s;
+    }
+    .pix-lightbox-close:hover { background: #f0f0f0; color: #333; }
+
+    .pix-lightbox-hint {
+      margin: 0 0 16px;
+      font-size: 15px;
+      font-weight: 600;
+      color: #1a3a5c;
+    }
+
+    .pix-lightbox-img {
+      width: 100%;
+      max-width: 280px;
+      height: auto;
+      border-radius: 12px;
+      border: 3px solid #f6c84b;
+      background: #fff;
+      padding: 8px;
+    }
+
+    .pix-lightbox-download {
+      display: inline-block;
+      margin-top: 16px;
+      padding: 10px 20px;
+      background: #1a3a5c;
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .pix-lightbox-download:hover { background: #244d73; }
 
     .divider {
       border: none;
