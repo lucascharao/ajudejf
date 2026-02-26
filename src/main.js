@@ -10,6 +10,7 @@ import {
   Car, ChefHat, Dumbbell, Brain, Smartphone,
   Pill, Cross, PawPrint, Cake, FileText, Brush, Wheat,
   Stethoscope, Heart, Gift,
+  Camera, X,
 } from 'lucide'
 
 const ICONS = {
@@ -21,10 +22,60 @@ const ICONS = {
   Car, ChefHat, Dumbbell, Brain, Smartphone,
   Pill, Cross, PawPrint, Cake, FileText, Brush, Wheat,
   Stethoscope, Heart, Gift,
+  Camera, X,
 }
 
 function initIcons (root = document) {
   createIcons({ icons: ICONS, root })
+}
+
+// ── PIX QR CODE UPLOAD ──
+window.removePixImage = function (formId) {
+  const fileInput = document.getElementById('pix-file-' + formId)
+  const previewDiv = document.getElementById('pix-preview-' + formId)
+  const uploadLabel = previewDiv.previousElementSibling
+  fileInput.value = ''
+  previewDiv.style.display = 'none'
+  uploadLabel.style.display = 'flex'
+}
+
+function setupPixUpload (formId) {
+  const fileInput = document.getElementById('pix-file-' + formId)
+  if (!fileInput) return
+  fileInput.addEventListener('change', function () {
+    const file = this.files[0]
+    if (!file) return
+    if (file.size > 512000) {
+      alert('A imagem deve ter no máximo 500KB.')
+      this.value = ''
+      return
+    }
+    if (!file.type.startsWith('image/')) {
+      alert('Formato não suportado. Use uma imagem.')
+      this.value = ''
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = function (e) {
+      const previewDiv = document.getElementById('pix-preview-' + formId)
+      const previewImg = document.getElementById('pix-preview-img-' + formId)
+      const uploadLabel = previewDiv.previousElementSibling
+      previewImg.src = e.target.result
+      previewDiv.style.display = 'flex'
+      uploadLabel.style.display = 'none'
+      initIcons(previewDiv)
+    }
+    reader.readAsDataURL(file)
+  })
+}
+
+function readFileAsBase64 (file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result)
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
 }
 
 // ── STATE ──
@@ -148,19 +199,30 @@ window.submitForm = async function (event, tipo) {
       return p
     }
 
+    // Lê imagem QR Code PIX se presente
+    const pixFileInput = form.querySelector('input[name="pix_qrcode"]')
+    const pixFile = pixFileInput && pixFileInput.files[0]
+    let pixImageBase64 = null
+    if (pixFile) {
+      pixImageBase64 = await readFileAsBase64(pixFile)
+    }
+
     // Detecta se precisa de moderação
     const hasPix = formRaw.pix_chave && formRaw.pix_chave.trim() !== ''
-    const needsModeration = tipo === 'vaquinha' || (tipo === 'doacao' && hasPix)
+    const hasPixImage = !!pixFile
+    const needsModeration = tipo === 'vaquinha' || (tipo === 'doacao' && (hasPix || hasPixImage))
 
     if (needsModeration) {
       // ── Envia para API (Resend + insert pendente) ──
       const apiTipo = tipo === 'vaquinha' ? 'vaquinha' : 'doacao_pix'
       const payload = buildPayload({ cidade_id })
+      const apiBody = { tipo: apiTipo, payload }
+      if (pixImageBase64) apiBody.pix_qrcode_base64 = pixImageBase64
 
       const resp = await fetch('/api/notify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tipo: apiTipo, payload })
+        body: JSON.stringify(apiBody)
       })
 
       if (!resp.ok) {
@@ -210,6 +272,7 @@ function collectFormData(form) {
   const formData = new FormData(form)
   const data = {}
   formData.forEach((value, key) => {
+    if (value instanceof File) return
     if (data[key]) {
       if (!Array.isArray(data[key])) data[key] = [data[key]]
       data[key].push(value)
@@ -309,6 +372,8 @@ window.newEntry = function () {
     const err = f.querySelector('.form-error')
     if (err) err.remove()
   })
+  document.querySelectorAll('.pix-preview').forEach(p => { p.style.display = 'none' })
+  document.querySelectorAll('.pix-upload-label').forEach(l => { l.style.display = 'flex' })
   state.city = ''
   state.type = ''
   state.data = {}
@@ -328,8 +393,10 @@ window.showView = function (view) {
   if (view === 'cadastrar') window.goStep(1)
 }
 
-// Inicializa ícones no carregamento
+// Inicializa ícones e uploads no carregamento
 initIcons()
+setupPixUpload('doacao')
+setupPixUpload('vaquinha')
 
 // ═══════════════════════════════════════════════════════
 // CONSULTA — HELPERS
@@ -403,6 +470,7 @@ function cardDoacao (item, cidade) {
         ${item.horario ? `<div class="rc-row"><i data-lucide="clock" class="icon-xs"></i> ${esc(item.horario)}</div>` : ''}
         ${chips(item.aceita)}
         ${item.pix_chave ? `<div class="rc-row rc-pix"><i data-lucide="banknote" class="icon-xs"></i> PIX (${esc(item.pix_tipo)}): <strong>${esc(item.pix_chave)}</strong>${item.pix_titular ? ` — ${esc(item.pix_titular)}` : ''}</div>` : ''}
+        ${item.pix_qrcode_url ? `<div class="rc-pix-qr"><img src="${esc(item.pix_qrcode_url)}" alt="QR Code PIX" loading="lazy" onclick="window.open('${esc(item.pix_qrcode_url)}','_blank')" /></div>` : ''}
       </div>
       ${wppBtn(item.telefone)}
     </div>`
@@ -489,6 +557,7 @@ function cardVaquinha (item, cidade) {
       <div class="rc-body">
         ${item.descricao ? `<div class="rc-row">${esc(item.descricao)}</div>` : ''}
         ${item.pix_chave ? `<div class="rc-row rc-pix"><i data-lucide="banknote" class="icon-xs"></i> PIX (${esc(item.pix_tipo)}): <strong>${esc(item.pix_chave)}</strong>${item.pix_titular ? ` — ${esc(item.pix_titular)}` : ''}</div>` : ''}
+        ${item.pix_qrcode_url ? `<div class="rc-pix-qr"><img src="${esc(item.pix_qrcode_url)}" alt="QR Code PIX" loading="lazy" onclick="window.open('${esc(item.pix_qrcode_url)}','_blank')" /></div>` : ''}
       </div>
       <a href="${esc(item.link_vakinha)}" target="_blank" rel="noopener noreferrer" class="rc-wpp">🔗 Acessar Vaquinha</a>
       ${wppBtn(item.telefone)}

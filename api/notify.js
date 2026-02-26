@@ -20,7 +20,34 @@ function makeLink (id, tipo, acao) {
   return `${APP_URL}/api/moderar?id=${id}&tipo=${tipo}&acao=${acao}&token=${token}`
 }
 
-function buildHtml (tipo, data, id) {
+async function uploadPixImage (supabase, base64DataUrl, recordId) {
+  const matches = base64DataUrl.match(/^data:(image\/\w+);base64,(.+)$/)
+  if (!matches) return null
+
+  const mimeType = matches[1]
+  const base64Data = matches[2]
+  const ext = mimeType.split('/')[1] === 'jpeg' ? 'jpg' : mimeType.split('/')[1]
+  const fileName = `${recordId}.${ext}`
+
+  const buffer = Buffer.from(base64Data, 'base64')
+
+  const { error } = await supabase.storage
+    .from('pix-qrcodes')
+    .upload(fileName, buffer, { contentType: mimeType, upsert: true })
+
+  if (error) {
+    console.error('[notify] Storage upload error:', error)
+    return null
+  }
+
+  const { data: urlData } = supabase.storage
+    .from('pix-qrcodes')
+    .getPublicUrl(fileName)
+
+  return urlData.publicUrl
+}
+
+function buildHtml (tipo, data, id, pixQrcodeUrl) {
   const tipoLabel = tipo === 'vaquinha' ? 'Vaquinha' : 'Ponto de Doação com PIX'
 
   const skipValues = new Set(['', null, undefined, '— Não recebe PIX —', '— Não informar PIX —'])
@@ -38,6 +65,13 @@ function buildHtml (tipo, data, id) {
   const aprovar = makeLink(id, tipo, 'aprovar')
   const recusar = makeLink(id, tipo, 'recusar')
 
+  const qrSection = pixQrcodeUrl ? `
+      <div style="margin-bottom:24px;text-align:center">
+        <p style="font-weight:600;color:#555;margin:0 0 8px">QR Code PIX enviado:</p>
+        <img src="${pixQrcodeUrl}" alt="QR Code PIX"
+             style="max-width:200px;max-height:200px;border:2px solid #f6c84b;border-radius:8px;padding:4px;background:#fff" />
+      </div>` : ''
+
   return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head><meta charset="UTF-8"/></head>
@@ -52,6 +86,7 @@ function buildHtml (tipo, data, id) {
       <table style="border-collapse:collapse;width:100%;background:#f9f9f9;border-radius:8px;overflow:hidden;margin-bottom:24px">
         <tbody>${rows}</tbody>
       </table>
+      ${qrSection}
       <div style="margin-bottom:24px;display:flex;gap:12px">
         <a href="${aprovar}"
           style="display:inline-block;background:#16a34a;color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-size:16px;font-weight:700;margin-right:12px">
@@ -79,13 +114,18 @@ module.exports = async function handler (req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
   try {
-    const { tipo, payload } = req.body || {}
+    const { tipo, payload, pix_qrcode_base64 } = req.body || {}
 
     if (!tipo || !payload) {
       return res.status(400).json({ error: 'tipo e payload são obrigatórios' })
     }
     if (!['vaquinha', 'doacao_pix'].includes(tipo)) {
       return res.status(400).json({ error: 'Tipo inválido' })
+    }
+
+    // Valida tamanho da imagem (base64 ~33% maior que binário, 750KB ≈ 500KB real)
+    if (pix_qrcode_base64 && pix_qrcode_base64.length > 750000) {
+      return res.status(400).json({ error: 'Imagem do QR Code muito grande. Máximo 500KB.' })
     }
 
     // Cria cliente com service role (bypassa RLS)
@@ -107,6 +147,18 @@ module.exports = async function handler (req, res) {
 
     const id = inserted.id
 
+    // Upload imagem QR Code PIX se fornecida
+    let pixQrcodeUrl = null
+    if (pix_qrcode_base64) {
+      pixQrcodeUrl = await uploadPixImage(supabase, pix_qrcode_base64, id)
+      if (pixQrcodeUrl) {
+        await supabase
+          .from(tabela)
+          .update({ pix_qrcode_url: pixQrcodeUrl })
+          .eq('id', id)
+      }
+    }
+
     // Envia e-mail via Resend
     const resend = new Resend(process.env.RESEND_API_KEY)
     const tipoLabel = tipo === 'vaquinha' ? 'Vaquinha' : 'Ponto de Doação com PIX'
@@ -116,7 +168,7 @@ module.exports = async function handler (req, res) {
       from: 'Ajude JF <noreply@ajudejf.com.br>',
       to: ADMINS,
       subject: `[Ajude JF] Moderar ${tipoLabel}: ${nome}`,
-      html: buildHtml(tipo, payload, id),
+      html: buildHtml(tipo, payload, id, pixQrcodeUrl),
     })
 
     return res.status(200).json({ ok: true, id })

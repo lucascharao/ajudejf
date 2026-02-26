@@ -406,6 +406,23 @@
             <label>Nome do titular da conta PIX</label>
             <input type="text" name="pix_titular" placeholder="Nome completo ou razão social" />
           </div>
+          <div class="form-group">
+            <label>QR Code PIX <span class="tip">(imagem do QR code — opcional se já informou a chave)</span></label>
+            <div class="pix-upload-area">
+              <input type="file" name="pix_qrcode" accept="image/png,image/jpeg,image/webp" class="pix-file-input" id="pix-file-doacao" />
+              <label for="pix-file-doacao" class="pix-upload-label">
+                <i data-lucide="camera" class="icon-sm"></i>
+                <span>Clique para enviar imagem do QR Code</span>
+                <span class="pix-upload-hint">PNG, JPG ou WEBP — Máximo 500KB</span>
+              </label>
+              <div class="pix-preview" id="pix-preview-doacao" style="display:none">
+                <img id="pix-preview-img-doacao" alt="Preview QR Code" />
+                <button type="button" class="pix-remove-btn" onclick="removePixImage('doacao')">
+                  <i data-lucide="x" class="icon-xs"></i> Remover
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
         <hr class="divider"/>
         <div class="form-group">
@@ -714,6 +731,23 @@
           <div class="form-group">
             <label>Nome do titular da conta PIX</label>
             <input type="text" name="pix_titular" placeholder="Nome completo ou razão social" />
+          </div>
+          <div class="form-group">
+            <label>QR Code PIX <span class="tip">(imagem do QR code — opcional se já informou a chave)</span></label>
+            <div class="pix-upload-area">
+              <input type="file" name="pix_qrcode" accept="image/png,image/jpeg,image/webp" class="pix-file-input" id="pix-file-vaquinha" />
+              <label for="pix-file-vaquinha" class="pix-upload-label">
+                <i data-lucide="camera" class="icon-sm"></i>
+                <span>Clique para enviar imagem do QR Code</span>
+                <span class="pix-upload-hint">PNG, JPG ou WEBP — Máximo 500KB</span>
+              </label>
+              <div class="pix-preview" id="pix-preview-vaquinha" style="display:none">
+                <img id="pix-preview-img-vaquinha" alt="Preview QR Code" />
+                <button type="button" class="pix-remove-btn" onclick="removePixImage('vaquinha')">
+                  <i data-lucide="x" class="icon-xs"></i> Remover
+                </button>
+              </div>
+            </div>
           </div>
         </div>
         <div class="btn-row">
