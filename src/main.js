@@ -23,8 +23,8 @@ const ICONS = {
   Stethoscope, Heart, Gift,
 }
 
-function initIcons (el = document) {
-  createIcons({ icons: ICONS, el })
+function initIcons (root = document) {
+  createIcons({ icons: ICONS, root })
 }
 
 // ── STATE ──
