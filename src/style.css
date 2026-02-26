@@ -81,6 +81,12 @@
       color: rgba(255,255,255,.7);
       margin-top: 2px;
     }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
     .header-badge {
       background: var(--red);
       color: var(--white);
@@ -91,6 +97,17 @@
       text-transform: uppercase;
       letter-spacing: .5px;
       flex-shrink: 0;
+    }
+    .instagram-link {
+      color: var(--white);
+      opacity: .8;
+      transition: opacity .2s, transform .2s;
+      display: flex;
+      align-items: center;
+    }
+    .instagram-link:hover {
+      opacity: 1;
+      transform: scale(1.15);
     }
 
     /* ── PAGE LAYOUT ── */
